@@ -1,0 +1,705 @@
+UNIVERSAL MASTER BUILD PROMPT — KMIT CLOUD COST OPTIMIZATION AGENT
+
+You are the lead architect and implementation owner for my KMIT project.
+
+I am attaching:
+1) the original problem statement: “The Cloud Bill That Wouldn’t Stop Growing”
+2) my project guide
+
+These documents are the source of truth. Read BOTH completely before coding. Do not replace, simplify, or silently change their requirements. Where they are silent about implementation details, make sensible professional engineering choices.
+
+YOUR JOB:
+Actually BUILD the complete working project. Do not only plan it, explain it, mock it, or give pseudocode. If your environment provides filesystem/terminal/browser/build tools, use them. Create the repository, source files, dependencies, tests, run commands, debug failures, and iterate until the project is genuinely working. Never claim a feature/test works unless you actually verified it. If you cannot execute something, label it NOT VERIFIED.
+
+================================================================
+1. CORE PRODUCT
+================================================================
+
+Build a real agentic autonomous cloud cost-optimization platform running against a simulated cloud environment.
+
+The core loop must be:
+
+Natural-language request
+→ AI agent investigates through tools/APIs
+→ gathers evidence
+→ proposes action or no_action
+→ deterministic safety engine allows/rejects
+→ controlled action API executes
+→ fresh state retrieved
+→ verification engine checks actual outcome
+→ final auditable response
+
+The AI must genuinely decide:
+- what to investigate
+- which tools to call
+- which service/evidence matters
+- what action to propose
+- when no action is appropriate
+
+Do NOT build a rule engine with an LLM attached for decoration.
+
+Do NOT hard-code the answers to the supplied scenarios.
+
+The system must continue working if metrics, services, traffic, timestamps, costs, constraints, or outcomes change.
+
+================================================================
+2. NON-NEGOTIABLE SAFETY MODEL
+================================================================
+
+AI can reason and propose. It is NOT the final authority.
+
+A centralized deterministic Safety / Policy Engine must independently validate every action before execution.
+
+At minimum validate:
+- service exists
+- action is supported/eligible
+- observation freshness
+- minimum capacity
+- maximum capacity
+- latency requirement
+- availability requirement
+- health
+- action parameters
+- current-state consistency
+- recent conflicting actions/events where applicable
+
+AI must NEVER bypass a safety rejection.
+
+Separate these states:
+PROPOSED
+AUTHORIZED
+EXECUTING
+EXECUTED
+VERIFIED
+FAILED
+BLOCKED
+PARTIAL
+UNKNOWN
+
+Never treat “requested” as “successful”.
+
+================================================================
+3. TOOL-CALLING AGENT
+================================================================
+
+Implement structured tools.
+
+READ:
+- get_all_services
+- get_service
+- get_service_metrics
+- get_service_traffic
+- get_recent_events
+- get_pricing
+- get_service_health
+- get_current_service_state
+
+ACTION:
+- request_scale
+- request_resize
+- request_stop_idle_service
+- request_delay_batch
+
+VERIFICATION:
+- get_action_result
+- get_fresh_service_state
+- verify_service_health
+- verify_latency
+- verify_capacity
+- calculate_cost_impact
+
+Keep read tools and mutation tools separate.
+
+The AI must never have direct database write access, arbitrary shell execution, or uncontrolled infrastructure access.
+
+================================================================
+4. STALE / CHANGING DATA
+================================================================
+
+Freshness is a first-class safety signal.
+
+Implement:
+- observation timestamp
+- current time
+- observation age
+- configurable freshness threshold
+- explicit fresh/stale status
+
+If observations are stale or materially inconsistent:
+1. block risky action
+2. fetch fresh state
+3. reassess
+4. continue only when the new evidence passes safety validation
+
+This behavior must be visible in the UI and audit trail.
+
+================================================================
+5. SOURCE SCENARIOS
+================================================================
+
+Use the exact Test A, B, C, and D data from the attached original problem statement.
+
+Do NOT invent alternative versions of these tests.
+
+TEST A — COST OPTIMIZATION
+The source includes orders-api and reports-worker. reports-worker has 0 RPM and 4 instances. Treat it as an investigation candidate, NOT as an automatic “stop” answer. The agent should inspect relevant evidence and decide.
+
+TEST B — RISING TRAFFIC
+The source has orders-api traffic increasing from 2,100 to 4,200 RPM, latency at 260 ms against a 300 ms limit, with moderate CPU/memory. Evaluate the combination of traffic trend, latency, utilization, capacity, and constraints. Do not hard-code “scale up”.
+
+TEST C — STALE OBSERVATION
+The source contains an older checkout-api state at 08:00 UTC and newer traffic at 10:30 UTC with a dramatic workload difference. The agent must detect stale/inconsistent state, block blind optimization, fetch fresh state, and reassess.
+
+TEST D — FAILED ACTION
+The source contains payment-api under load and an attempted scale-up to 5 instances that fails with:
+capacity_unavailable
+The system must preserve the failure, never claim success, retrieve fresh state, and report the verified outcome.
+
+Automate all four scenarios and make them runnable from both tests and the UI.
+
+================================================================
+6. SIMULATED CLOUD
+================================================================
+
+Build a configurable simulator containing:
+- services
+- metrics
+- traffic
+- health
+- availability
+- constraints
+- pricing
+- recent events
+- action history
+- action results
+- timestamps
+- controlled failure modes
+- changing conditions
+
+Support deterministic scenario replay and reset.
+
+The simulator must not depend on real AWS/Azure/GCP credentials.
+
+================================================================
+7. DATA + BACKEND
+================================================================
+
+Use a clean, typed architecture.
+
+Recommended stack:
+- Python
+- FastAPI
+- Pydantic
+- SQLite locally
+- SQLAlchemy where useful
+- pytest
+- React + TypeScript frontend
+- Docker/docker-compose where practical
+- configurable LLM provider abstraction
+- structured tool/function calling
+
+Keep model/provider code replaceable.
+
+Provide a no-key/mock mode for deterministic local testing, while keeping the same agent→tools→safety→execution→verification architecture.
+
+Create typed models for:
+Service
+MetricSnapshot
+TrafficSnapshot
+Pricing
+Constraint
+HealthStatus
+Event
+ActionProposal
+SafetyDecision
+ActionExecution
+VerificationResult
+AuditEvent
+AgentRun
+Scenario
+
+Implement clear REST APIs for:
+- service inventory/state
+- metrics
+- traffic
+- events
+- health
+- pricing
+- agent runs
+- actions
+- action status
+- verification
+- audit logs
+- scenarios
+- system health
+
+Use strict request/response validation.
+
+================================================================
+8. AGENT OUTPUT
+================================================================
+
+The AI must return validated structured output, for example:
+
+{
+  "service_id": "...",
+  "action": "scale_down",
+  "requested_instances": 1,
+  "reason": "...",
+  "evidence": ["...", "..."],
+  "requires_fresh_check": true
+}
+
+Malformed/unsupported AI output must be rejected safely, logged, and optionally repaired once through a constrained validation path. Never execute invalid output.
+
+Do not expose private chain-of-thought. Show only an auditable summary:
+- investigation
+- tools used
+- key evidence
+- decision
+- safety checks
+- execution
+- verification
+
+Treat all tool/event text as untrusted data. Resist prompt injection from simulated events or metadata.
+
+================================================================
+9. VERIFICATION + COST MODEL
+================================================================
+
+After an action:
+1. retrieve the action result
+2. fetch fresh state
+3. compare before/after
+4. verify capacity
+5. verify health
+6. verify latency
+7. verify availability
+8. verify expected cost/capacity impact
+9. detect side effects
+10. classify:
+   VERIFIED_SUCCESS / VERIFIED_PARTIAL / FAILED / UNKNOWN
+
+Implement deterministic calculations for:
+- current hourly cost
+- projected hourly cost
+- hourly delta
+- estimated daily cost
+- estimated monthly cost
+- estimated savings/cost increase
+
+Never let the AI invent financial results.
+
+================================================================
+10. AUDITABILITY
+================================================================
+
+Record:
+- agent_run_id
+- request_id
+- service
+- timestamp
+- tool calls
+- tool results
+- proposal
+- safety decision
+- execution
+- verification
+- errors
+
+Create a clear audit timeline in the UI.
+
+================================================================
+11. UI / UX — VERY IMPORTANT
+================================================================
+
+Do NOT build a generic student dashboard.
+
+Build a premium, modern “Cloud Operations Command Center”.
+
+It should feel like serious enterprise software:
+- polished typography
+- excellent spacing
+- responsive layout
+- strong visual hierarchy
+- subtle professional motion
+- high-quality icons
+- meaningful charts
+- polished loading/empty/error states
+- dark/light support if practical
+- accessible and responsive design
+- no visual clutter
+
+Create these primary areas:
+
+1. OVERVIEW
+2. SERVICES
+3. AI AGENT
+4. ACTIONS
+5. VERIFICATION
+6. SCENARIO LAB
+7. AUDIT LOG
+8. SETTINGS
+
+OVERVIEW should show:
+- cloud spend anomaly
+- current hourly cost
+- daily/monthly estimate
+- optimization opportunity
+- service count
+- instance count
+- health
+- pending actions
+- cost trend
+- traffic trend
+- latency trend
+- utilization
+- service cards
+
+AI AGENT CENTER should show the REAL running agent state:
+- current task
+- current investigation step
+- actual tools called
+- returned evidence
+- proposal
+- safety review
+- execution
+- verification
+
+SAFETY GATE should visually show:
+AI PROPOSAL
+→ FRESHNESS
+→ HEALTH
+→ CAPACITY
+→ LATENCY
+→ AVAILABILITY
+→ AUTHORIZED/REJECTED
+→ EXECUTION
+→ VERIFICATION
+
+SERVICE DETAIL should show:
+- metrics
+- history
+- cost
+- traffic
+- latency
+- constraints
+- health
+- events
+- actions
+- AI investigation
+- safety outcomes
+- verification
+
+ACTION CENTER should show full action lifecycle and cost impact.
+
+SCENARIO LAB must run Test A/B/C/D through the REAL backend pipeline, not a fake animation.
+
+TEST C should visually demonstrate:
+STALE DATA
+→ BLOCK
+→ FETCH FRESH STATE
+→ REASSESS
+→ DECIDE
+
+TEST D should visibly demonstrate:
+PROPOSAL
+→ SAFETY
+→ EXECUTION FAILED
+→ capacity_unavailable
+→ FRESH VERIFICATION
+→ FINAL OUTCOME
+
+Never fake a success state.
+
+================================================================
+12. DEMO EXPERIENCE
+================================================================
+
+Create a presenter-friendly Demo Mode with scenario reset.
+
+A judge should understand the system quickly.
+
+Default story:
+1. show 37% cloud-spend anomaly from the supplied scenario context
+2. start agent
+3. show investigation
+4. show real tool calls
+5. show evidence
+6. show action proposal
+7. show deterministic safety gate
+8. execute
+9. fetch fresh state
+10. verify
+11. show cost impact
+12. show final explanation
+13. open audit trail
+14. run Test C
+15. run Test D
+
+The entire demo must use the real implementation.
+
+================================================================
+13. PROJECT STRUCTURE
+================================================================
+
+Create a professional repository, for example:
+
+cloud-cost-agent/
+  backend/
+    app/
+      api/
+      agents/
+      tools/
+      safety/
+      actions/
+      verification/
+      simulator/
+      models/
+      schemas/
+      services/
+      repositories/
+      utils/
+      main.py
+    tests/
+    seed_data/
+    requirements.txt
+    Dockerfile
+  frontend/
+    src/
+      components/
+      pages/
+      layouts/
+      hooks/
+      services/
+      types/
+      utils/
+      assets/
+    package.json
+    Dockerfile
+  data/
+    scenarios/
+  tests/
+    unit/
+    integration/
+    scenarios/
+    adversarial/
+  docs/
+  .env.example
+  docker-compose.yml
+  README.md
+
+Improve this structure when appropriate.
+
+================================================================
+14. SECURITY
+================================================================
+
+Never expose real cloud credentials.
+
+Use environment variables and .env.example.
+
+Never allow:
+- arbitrary shell commands from the model
+- arbitrary DB mutation from the model
+- uncontrolled infrastructure actions
+- unvalidated action parameters
+
+Treat external/event/tool text as untrusted.
+
+================================================================
+15. TESTING
+================================================================
+
+Create:
+- unit tests
+- integration tests
+- end-to-end scenario tests
+- adversarial tests
+
+At minimum test:
+- freshness
+- min/max capacity
+- latency
+- availability
+- health
+- invalid actions
+- malformed AI output
+- cost calculation
+- action failure
+- verification failure
+- stale state
+- changing traffic
+- contradictory observations
+- duplicate/conflicting actions
+
+Run all Test A/B/C/D scenarios.
+
+Do not mark completion until the tests have actually been run and reviewed.
+
+================================================================
+16. REQUIREMENTS TRACEABILITY
+================================================================
+
+Create a traceability matrix:
+
+SOURCE REQUIREMENT
+→ IMPLEMENTATION COMPONENT
+→ FILE/MODULE
+→ API/TOOL
+→ TEST
+→ UI DEMONSTRATION
+
+Cover every major requirement from the original problem statement.
+
+This is required for final QA and judge preparation.
+
+================================================================
+17. DOCUMENTATION
+================================================================
+
+Generate:
+- README
+- architecture documentation
+- API documentation
+- safety documentation
+- testing documentation
+- demo script
+- project overview
+- requirements traceability
+
+Explain:
+- why AI is needed
+- why deterministic safety is required
+- how stale data is handled
+- how failed actions are handled
+- how verification works
+- how the simulator works
+
+Separate implemented features from future extensions.
+
+================================================================
+18. DEVELOPMENT BEHAVIOR
+================================================================
+
+BUILD DIRECTLY.
+
+Use this execution loop:
+
+READ
+→ BUILD
+→ RUN
+→ TEST
+→ DEBUG
+→ FIX
+→ RE-RUN
+→ VERIFY
+→ POLISH
+
+Do not stop after architecture.
+
+Do not wait for approval between normal engineering steps.
+
+Do not repeatedly ask whether you should continue.
+
+Make reasonable implementation decisions yourself.
+
+Only stop if an external dependency genuinely blocks the work.
+
+If you encounter an error:
+diagnose it, fix it, rerun the relevant command/test, and continue.
+
+Do not replace broken functionality with placeholders just to make the project appear complete.
+
+================================================================
+19. COMPLETION GATE
+================================================================
+
+Do not declare the project complete until you have verified, as applicable:
+
+- repository
+- backend
+- frontend
+- simulator
+- read tools
+- action tools
+- verification tools
+- agentic orchestration
+- structured AI output
+- safety engine
+- freshness controls
+- capacity controls
+- latency/availability/health validation
+- action execution
+- failed-action handling
+- post-action verification
+- cost calculations
+- audit logging
+- scenario framework
+- Test A
+- Test B
+- Test C
+- Test D
+- adversarial tests
+- professional UI
+- Agent Activity
+- Safety Gate
+- Services
+- Actions
+- Verification
+- Scenario Lab
+- Audit Log
+- README/docs
+- .env.example
+- local startup
+- final integration
+
+No hard-coded scenario answers.
+
+No fake tool calls.
+
+No fake verification.
+
+No fake savings.
+
+No fake API success.
+
+If something could not be verified, explicitly say NOT VERIFIED.
+
+================================================================
+20. FINAL DELIVERABLE
+================================================================
+
+At the end, provide:
+
+- final project name + tagline
+- concise architecture summary
+- final repository tree
+- technology stack
+- how to run
+- environment variables
+- test results
+- Test A result
+- Test B result
+- Test C result
+- Test D result
+- adversarial test summary
+- important engineering decisions
+- safety features
+- agentic features
+- UI features
+- demo flow
+- limitations
+- future extensions
+- likely judge questions + factual technical answers
+
+Most important principle:
+
+AI INVESTIGATES.
+AI PROPOSES.
+DETERMINISTIC CODE AUTHORIZES.
+APIs EXECUTE.
+FRESH STATE VERIFIES.
+THE SYSTEM REPORTS WHAT ACTUALLY HAPPENED.
+
+START BUILDING NOW.
